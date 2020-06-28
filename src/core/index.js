@@ -22,5 +22,4 @@ Object.defineProperty(Vue, 'FunctionalRenderContext', {
 })
 
 Vue.version = '__VERSION__'
-
 export default Vue

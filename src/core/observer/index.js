@@ -60,6 +60,7 @@ export class Observer {
    * Walk through all properties and convert them into
    * getter/setters. This method should only be called when
    * value type is Object.
+   * 遍历所有属性将其转换为getter/setter
    */
   walk (obj: Object) {
     const keys = Object.keys(obj)
@@ -130,7 +131,15 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 }
 
 /**
- * Define a reactive property on an Object.
+ * ***** 源码阅读入口1
+ * 
+ * 定义响应式数据，以进行变化追踪
+ * 
+ * 调用位置：
+ * core/instance/inject  Object.keys(result).forEach(key => {defineReactive(vm, key, result[key])})  注： 初始化注入,init.js中被调用
+ * core/instance/render  initRender()
+ * core/instance/state  initProps()
+ * core/observer/index(当前文件) Observer类中
  */
 export function defineReactive (
   obj: Object,
@@ -153,26 +162,27 @@ export function defineReactive (
     val = obj[key]
   }
 
+ //判断value 是否有__ob__    实例化 dep对象,获取dep对象  为 value添加__ob__ 属性递归把val添加到观察者中  返回 new Observer 实例化的对象
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
-    enumerable: true,
-    configurable: true,
-    get: function reactiveGetter () {
+    enumerable: true,// 表示遍历obj时，key可以被遍历
+    configurable: true,// 表示key可以配置
+    get: function reactiveGetter () {// 每次获取key时，就会执行get
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
-        dep.depend()
+        dep.depend()// 收集依赖（target:Node），目的：当data发生变化时去通知这个target
         if (childOb) {
-          childOb.dep.depend()
-          if (Array.isArray(value)) {
-            dependArray(value)
+          childOb.dep.depend() //如果子节点存在也添加一个dep
+          if (Array.isArray(value)) { //判断是否是数组 如果是数组
+            dependArray(value)  //则数组也添加dep
           }
         }
       }
       return value
     },
-    set: function reactiveSetter (newVal) {
+    set: function reactiveSetter (newVal) {// 每次设置key时，就会执行set
       const value = getter ? getter.call(obj) : val
-      /* eslint-disable no-self-compare */
+      /* eslint-disable no-self-compare 新旧值比较 如果是一样则不执行了 */
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
@@ -188,7 +198,7 @@ export function defineReactive (
         val = newVal
       }
       childOb = !shallow && observe(newVal)
-      dep.notify()
+      dep.notify() // 通知Watcher更新target列表
     }
   })
 }

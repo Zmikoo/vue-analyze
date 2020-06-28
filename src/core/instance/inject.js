@@ -13,6 +13,7 @@ export function initProvide (vm: Component) {
   }
 }
 
+// 初始化注入
 export function initInjections (vm: Component) {
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset='UTF-8'>
+        <script src="../dist/vue.js"></script>
+    </head>
+    <body>
+        <div id='app'>
+            <div>
+                {{msg + obj.name.first + age}}
+                <span>{{msg}}</span>
+            </div>
+            <input type="text" v-model='msg'>
+            <button @click='changeObj'>点击</button>
+        </div>
+    </body>
+    <script>
+        var vm = new Vue({
+            el:'#app',
+            data:{
+                msg:'Hello World',
+                name:'Jone',
+                age: 15,
+                obj:{
+                    name: {
+                        first:'Zhang',
+                        last:'yx'
+                    }
+                }
+            },
+            methods:{
+                changeObj(){
+                    this.obj.name.first = 'Yang'
+                }
+            }
+        })
+        // console.log(window.test-passive())
+    </script>
+</html>

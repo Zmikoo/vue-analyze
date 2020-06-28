@@ -22,32 +22,39 @@ let uid = 0
  * A watcher parses an expression, collects dependencies,
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
+ * 
+ * 实例化位置：
+ * core/instance/lifecycle  mountComponent
+ * core/instance/state   initComputed -> if (!isSSR)
+ * 
+ * Dep存储和操作Watcher
+ * core/observer/scheduler 处理Watcher队列
  */
 export default class Watcher {
-  vm: Component;
+  vm: Component;//vm vode
   expression: string;
-  cb: Function;
+  cb: Function;// data更新后用于更新DOM的回调函数
   id: number;
   deep: boolean;
   user: boolean;
   lazy: boolean;
   sync: boolean;
   dirty: boolean;
-  active: boolean;
-  deps: Array<Dep>;
-  newDeps: Array<Dep>;
+  active: boolean;//激活
+  deps: Array<Dep>;// 观察者队列
+  newDeps: Array<Dep>;// 新的观察者队列
   depIds: SimpleSet;
   newDepIds: SimpleSet;
-  before: ?Function;
+  before: ?Function;//beforeUpdate钩子函数
   getter: Function;
   value: any;
 
   constructor (
     vm: Component,
-    expOrFn: string | Function,
-    cb: Function,
+    expOrFn: string | Function,// data或js表达式或者函数 
+    cb: Function,// data更新后用于更新DOM的回调函数
     options?: ?Object,
-    isRenderWatcher?: boolean
+    isRenderWatcher?: boolean //是否渲染过得观察者
   ) {
     this.vm = vm
     if (isRenderWatcher) {
@@ -56,32 +63,35 @@ export default class Watcher {
     vm._watchers.push(this)
     // options
     if (options) {
+      // console.log('[/core/observer/watcher.js options]',options)
       this.deep = !!options.deep
       this.user = !!options.user
-      this.lazy = !!options.lazy
-      this.sync = !!options.sync
-      this.before = options.before
+      this.lazy = !!options.lazy//懒惰 ssr 渲染
+      this.sync = !!options.sync //如果是同步
+      this.before = options.before // beforeUpdate钩子函数
     } else {
       this.deep = this.user = this.lazy = this.sync = false
     }
-    this.cb = cb
+    this.cb = cb // 一旦数据发生变化，需要调用cb更新dom
     this.id = ++uid // uid for batching
     this.active = true
-    this.dirty = this.lazy // for lazy watchers
-    this.deps = []
-    this.newDeps = []
-    this.depIds = new Set()
+    this.dirty = this.lazy // for lazy watchers 对于懒惰的观察者
+    this.deps = []// 观察者队列
+    this.newDeps = []// 新的观察者队列
+    this.depIds = new Set()// 内容不可重复的数组对象
     this.newDepIds = new Set()
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
-      this.getter = expOrFn
+      this.getter = expOrFn// 给数据赋新值，触发getter
     } else {
+      // 解析类似obj.a.b的值 赋值给对象的key，触发getter
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
+        // 报错解析值失败
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -97,13 +107,15 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 计算getter,重新收集依赖
    */
   get () {
     pushTarget(this)
+    console.log('[/core/observer/watcher.js get]')
     let value
     const vm = this.vm
     try {
-      value = this.getter.call(vm, vm)
+      value = this.getter.call(vm, vm)// 在vm上找data
     } catch (e) {
       if (this.user) {
         handleError(e, vm, `getter for watcher "${this.expression}"`)
@@ -113,7 +125,9 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // 递归遍历找value
       if (this.deep) {
+        console.log('[/core/observer/watcher.js get deep]')
         traverse(value)
       }
       popTarget()
@@ -132,6 +146,7 @@ export default class Watcher {
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
         dep.addSub(this)
+        console.log('[/core/observer/watcher.js addDep]')
       }
     }
   }
@@ -160,6 +175,8 @@ export default class Watcher {
   /**
    * Subscriber interface.
    * Will be called when a dependency changes.
+   * 
+   * 当依赖性更改时将被调用
    */
   update () {
     /* istanbul ignore else */
@@ -224,6 +241,7 @@ export default class Watcher {
 
   /**
    * Remove self from all dependencies' subscriber list.
+   * 拆除
    */
   teardown () {
     if (this.active) {
