@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset='UTF-8'>
+        <script src="../dist/vue.js"></script>
+    </head>
+    <body>
+        <div id='app'>
+            <div>
+                {{msg + name + age}}
+                <span>{{msg}}</span>
+            </div>
+            <input type="text" v-model='msg'>
+        </div>
+    </body>
+    <script>
+        var vm = new Vue({
+            el:'#app',
+            data:{
+                msg:'Hello World',
+                name:'Jone',
+                age: 15,
+            }
+        })
+        // console.log(window.test-passive())
+    </script>
+</html>

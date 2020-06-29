@@ -9,6 +9,7 @@ let uid = 0
 /**
  * A dep is an observable that can have multiple
  * directives subscribing to it.
+ * dep对象用于管理所有的订阅者和通知这些订阅者 
  */
 export default class Dep {
   static target: ?Watcher;
@@ -16,11 +17,12 @@ export default class Dep {
   subs: Array<Watcher>;
 
   constructor () {
-    this.id = uid++
-    this.subs = []
+    this.id = uid++ // 数据对应的唯一id
+    this.subs = [] // 数据对应的dom节点列表（watcher列表）
   }
 
   addSub (sub: Watcher) {
+    console.log('[/core/observer/dep.js addSub]',sub)
     this.subs.push(sub)
   }
 
@@ -30,6 +32,7 @@ export default class Dep {
 
   depend () {
     if (Dep.target) {
+      //为Watcher 添加 为Watcher.newDeps.push(dep); 一个dep对象
       Dep.target.addDep(this)
     }
   }
@@ -52,10 +55,12 @@ export default class Dep {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
+// 全局唯一的观察者
 Dep.target = null
 const targetStack = []
 
 export function pushTarget (target: ?Watcher) {
+  // target堆
   targetStack.push(target)
   Dep.target = target
 }

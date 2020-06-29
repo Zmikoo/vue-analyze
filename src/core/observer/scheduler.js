@@ -1,5 +1,5 @@
 /* @flow */
-
+// 调度器
 import type Watcher from './watcher'
 import config from '../config'
 import { callHook, activateChildComponent } from '../instance/lifecycle'
@@ -47,6 +47,11 @@ function flushSchedulerQueue () {
   //    user watchers are created before the render watcher)
   // 3. If a component is destroyed during a parent component's watcher run,
   //    its watchers can be skipped.
+  // 在刷新之前对队列进行排序。
+   // 这样可以确保：
+   // 1.组件从父级更新为子级。 （因为父母总是在子级之前创建）
+   // 2.组件的用户监视程序在其呈现监视程序之前运行（因为用户观察者先于渲染观察者创建）
+   // 3.如果在父组件的观察者运行期间某个组件被破坏，可以跳过其观察者。
   queue.sort((a, b) => a.id - b.id)
 
   // do not cache length because more watchers might be pushed
@@ -107,6 +112,9 @@ function callUpdatedHooks (queue) {
 /**
  * Queue a kept-alive component that was activated during patch.
  * The queue will be processed after the entire tree has been patched.
+ * 
+ * 对激活的组件排队，修补虚拟dom树后，将处理队列
+ * 使用位置：core/vdome insert -> if(vnode.data.keepAlive) -> if(context._isMounted)
  */
 export function queueActivatedComponent (vm: Component) {
   // setting _inactive to false here so that a render function can
@@ -126,6 +134,8 @@ function callActivatedHooks (queue) {
  * Push a watcher into the watcher queue.
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
+ * 
+ * 使用位置：core/observer update（依赖项被更改时发生调用）
  */
 export function queueWatcher (watcher: Watcher) {
   const id = watcher.id

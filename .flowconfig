@@ -1,6 +1,7 @@
 [ignore]
 .*/node_modules/.*
 .*/test/.*
+.*/my-test/.*
 .*/scripts/.*
 .*/examples/.*
 .*/benchmarks/.*
