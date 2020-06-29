@@ -714,8 +714,8 @@
    * dep对象用于管理所有的订阅者和通知这些订阅者 
    */
   var Dep = function Dep () {
-    this.id = uid++; // 数据对应的唯一id
-    this.subs = []; // 数据对应的dom节点列表（watcher列表）
+    this.id = uid++; 
+    this.subs = []; 
   };
 
   Dep.prototype.addSub = function addSub (sub) {
@@ -863,8 +863,6 @@
 
   var arrayProto = Array.prototype;
   var arrayMethods = Object.create(arrayProto);
-  console.log('[/core/observer/array.js arrayProto]',Object.create(arrayProto));
-  console.log('[/core/observer/array.js arrayMethods]',arrayMethods);
   var methodsToPatch = [
     'push',
     'pop',
@@ -880,24 +878,20 @@
    */
   methodsToPatch.forEach(function (method) {
     // cache original method
-    var original = arrayProto[method];
+    var original = arrayProto[method];// 存储js数组原生方法
     /**
-     * def参数：
-     * 1 obj:Object
-     * 2 key:string
-     * 3 val:any
-     * 4 enumerable?:boolean
-     * 内部实现：
-     * Object.defineProperty(obj,key,{value:val,enumerable:!!enumerable,writeable:true,configurable:true})
+     * def作用：将被侦听的数组的变更方法进行包裹，使它们也会触发视图更新
+     * def内部实现：Object.defineProperty(obj,key,{value:val,enumerable:!!enumerable,writeable:true,configurable:true})
      */
     def(arrayMethods, method, function mutator () {
       var args = [], len = arguments.length;
       while ( len-- ) args[ len ] = arguments[ len ];
 
-      var result = original.apply(this, args);
-      var ob = this.__ob__;
-      console.log('[/core/observer/array.js ob]',ob);
-      var inserted;
+      var result = original.apply(this, args);// 执行js原生的数组方法
+
+      var ob = this.__ob__;  // 有__ob__代表这是个Observer对象，this.__ob__就是Observer对象自身 相关代码实现：def(value, '__ob__', this)
+
+      var inserted; // 用于存储插入的新元素；
       switch (method) {
         case 'push':
         case 'unshift':
@@ -907,9 +901,8 @@
           inserted = args.slice(2);
           break
       }
-      if (inserted) { ob.observeArray(inserted); }
-      // notify change
-      ob.dep.notify();
+      if (inserted) { ob.observeArray(inserted); }// 对插入的新数据的每一项都添加监听 new Observer
+      ob.dep.notify();// 数组发生了变化，通知DOM更新
       return result
     });
   });
@@ -921,9 +914,10 @@
   /**
    * In some cases we may want to disable observation inside a component's
    * update computation.
+   * 在某些情况下，我们可能希望禁用组件内部的观察更新计算。
    */
   var shouldObserve = true;
-
+  // 设置组件内部是否禁止观察更新
   function toggleObserving (value) {
     shouldObserve = value;
   }
@@ -938,15 +932,17 @@
     this.value = value;
     this.dep = new Dep();
     this.vmCount = 0;
-    def(value, '__ob__', this);
+    def(value, '__ob__', this);// 将data的Observer实例绑定在data上
     if (Array.isArray(value)) {
-      if (hasProto) {
+       // 给每一个数组类型的data添加可触发视图更新的'push','pop','shift','unshift','splice','sort','reverse'方法
+      if (hasProto) {//hasProto = '__proto__' in {}
         protoAugment(value, arrayMethods);
       } else {
         copyAugment(value, arrayMethods, arrayKeys);
       }
-      this.observeArray(value);
+      this.observeArray(value);// 给value（数组）的每一项都添加 new Observer
     } else {
+      // 深度遍历对象添加new Observer
       this.walk(value);
     }
   };
@@ -955,7 +951,7 @@
    * Walk through all properties and convert them into
    * getter/setters. This method should only be called when
    * value type is Object.
-   * 遍历所有属性将其转换为getter/setter
+   * 遍历所有属性绑定getter、setter
    */
   Observer.prototype.walk = function walk (obj) {
     var keys = Object.keys(obj);
@@ -969,7 +965,7 @@
    */
   Observer.prototype.observeArray = function observeArray (items) {
     for (var i = 0, l = items.length; i < l; i++) {
-      observe(items[i]);
+      observe(items[i]);// 对每一个item都new Observer
     }
   };
 
@@ -978,6 +974,7 @@
   /**
    * Augment a target Object or Array by intercepting
    * the prototype chain using __proto__
+   * 用于给数组添加可触发视图更新的方法，如push
    */
   function protoAugment (target, src) {
     /* eslint-disable no-proto */
@@ -988,6 +985,7 @@
   /**
    * Augment a target Object or Array by defining
    * hidden properties.
+   * 用于给数组添加可触发视图更新的方法，如push
    */
   /* istanbul ignore next */
   function copyAugment (target, src, keys) {
@@ -1001,13 +999,14 @@
    * Attempt to create an observer instance for a value,
    * returns the new observer if successfully observed,
    * or the existing observer if the value already has one.
+   * 专门用于实例化Observer的函数
    */
   function observe (value, asRootData) {
     if (!isObject(value) || value instanceof VNode) {
       return
     }
     var ob;
-    if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {// __0b__是Oberver对象含有的属性
       ob = value.__ob__;
     } else if (
       shouldObserve &&
@@ -1025,7 +1024,7 @@
   }
 
   /**
-   * ***** 源码阅读入口1
+   * Define a reactive property on an Object.
    * 
    * 定义响应式数据，以进行变化追踪
    * 
@@ -1044,8 +1043,8 @@
   ) {
     var dep = new Dep();
 
-    var property = Object.getOwnPropertyDescriptor(obj, key);
-    if (property && property.configurable === false) {
+    var property = Object.getOwnPropertyDescriptor(obj, key);// 获取obj上key对应的属性描述符对象。
+    if (property && property.configurable === false) {// 如果key值不可配置，则return
       return
     }
 
@@ -1056,25 +1055,24 @@
       val = obj[key];
     }
 
-   //判断value 是否有__ob__    实例化 dep对象,获取dep对象  为 value添加__ob__ 属性递归把val添加到观察者中  返回 new Observer 实例化的对象
-    var childOb = !shallow && observe(val);
+    var childOb = !shallow && observe(val);// 返回Observer对象；
     Object.defineProperty(obj, key, {
       enumerable: true,// 表示遍历obj时，key可以被遍历
       configurable: true,// 表示key可以配置
-      get: function reactiveGetter () {// 每次获取key时，就会执行get
+      get: function reactiveGetter () {// 每次有dom获取key时，就会执行get,收集target(Node)。谨记不在定义时执行，只在get事件发生时执行
         var value = getter ? getter.call(obj) : val;
-        if (Dep.target) {
-          dep.depend();// 收集依赖（target:Node），目的：当data发生变化时去通知这个target
-          if (childOb) {
-            childOb.dep.depend(); //如果子节点存在也添加一个dep
-            if (Array.isArray(value)) { //判断是否是数组 如果是数组
-              dependArray(value);  //则数组也添加dep
+        if (Dep.target) {// 在解析html模板的过程中如果发现一个dom中有key（vue实例的data），就会把dom赋值给target
+          dep.depend();// 将依赖（target:Node）收集到dep中进行管理，目的：当key值发生变化时去通知这个target
+          if (childOb) {// 如果dom中的key形式类似于obj.a.b或者arr[0]这种形式，就给obj.a和obj.a.b的Dep中也添加target;
+            childOb.dep.depend();
+            if (Array.isArray(value)) {
+              dependArray(value); //数组每个item全部denpend
             }
           }
         }
         return value
       },
-      set: function reactiveSetter (newVal) {// 每次设置key时，就会执行set
+      set: function reactiveSetter (newVal) {// 每次设置key时，就会执行set。谨记不在定义时执行，只在set事件发生时执行
         var value = getter ? getter.call(obj) : val;
         /* eslint-disable no-self-compare 新旧值比较 如果是一样则不执行了 */
         if (newVal === value || (newVal !== newVal && value !== value)) {
@@ -1092,7 +1090,7 @@
           val = newVal;
         }
         childOb = !shallow && observe(newVal);
-        dep.notify(); // 通知Watcher更新target列表
+        dep.notify();// 通知Watcher更新target列表
       }
     });
   }
@@ -1101,19 +1099,20 @@
    * Set a property on an object. Adds the new property and
    * triggers change notification if the property doesn't
    * already exist.
+   * 给对象或数组的元素赋新值并更新DOM
    */
   function set (target, key, val) {
     if (isUndef(target) || isPrimitive(target)
-    ) {
+    ) {// 如果target是undefined或者简单类型
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
     }
     if (Array.isArray(target) && isValidArrayIndex(key)) {
       target.length = Math.max(target.length, key);
-      target.splice(key, 1, val);
+      target.splice(key, 1, val);// 更新数组元素的值
       return val
     }
     if (key in target && !(key in Object.prototype)) {
-      target[key] = val;
+      target[key] = val;// 更新对象的值并将触发setter
       return val
     }
     var ob = (target).__ob__;
@@ -1121,7 +1120,7 @@
       warn(
         'Avoid adding reactive properties to a Vue instance or its root $data ' +
         'at runtime - declare it upfront in the data option.'
-      );
+      );// 避免在运行时将响应属性添加到Vue实例或其根$data-在data选项中预先声明
       return val
     }
     if (!ob) {
@@ -1135,16 +1134,18 @@
 
   /**
    * Delete a property and trigger change if necessary.
+   * 删除数组或对象的元素并更新DOM
    */
   function del (target, key) {
     if (isUndef(target) || isPrimitive(target)
-    ) {
+    ) {// 如果target是undefined或者简单类型
       warn(("Cannot delete reactive property on undefined, null, or primitive value: " + ((target))));
     }
     if (Array.isArray(target) && isValidArrayIndex(key)) {
-      target.splice(key, 1);
+      target.splice(key, 1);// 从数组中删除key
       return
     }
+
     var ob = (target).__ob__;
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
@@ -1156,16 +1157,17 @@
     if (!hasOwn(target, key)) {
       return
     }
-    delete target[key];
+    delete target[key];// 从对象上删除key
     if (!ob) {
       return
     }
-    ob.dep.notify();
+    ob.dep.notify();// 通知更新DOM
   }
 
   /**
    * Collect dependencies on array elements when the array is touched, since
    * we cannot intercept array element access like property getters.
+   * 数组的元素被获取时收集依赖。（无法像对象的属性获取器那样拦截对数组元素的访问）
    */
   function dependArray (value) {
     for (var e = (void 0), i = 0, l = value.length; i < l; i++) {
@@ -2134,13 +2136,7 @@
    * Recursively traverse an object to evoke all converted
    * getters, so that every nested property inside the object
    * is collected as a "deep" dependency.
-<<<<<<< HEAD
-   * 递归地遍历对象以唤起所有已转换的对象
-   * 吸气剂，使对象内的每个嵌套属性
-   * 被收集为“深度”依赖项。
-=======
    * 递归地遍历对象 深度追踪
->>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
    */
   function traverse (val) {
     _traverse(val, seenObjects);
@@ -2155,7 +2151,7 @@
     if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
       return
     }
-    if (val.__ob__) {
+    if (val.__ob__) {// __0b__是Oberver对象含有的属性
       var depId = val.__ob__.dep.id;
       if (seen.has(depId)) {
         return
@@ -3304,11 +3300,7 @@
       this.user = !!options.user;
       this.lazy = !!options.lazy;//懒惰 ssr 渲染
       this.sync = !!options.sync; //如果是同步
-<<<<<<< HEAD
-      this.before = options.before;
-=======
       this.before = options.before; // beforeUpdate钩子函数
->>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
     } else {
       this.deep = this.user = this.lazy = this.sync = false;
     }
@@ -3325,12 +3317,7 @@
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn;// 给数据赋新值，触发getter
     } else {
-<<<<<<< HEAD
-      //如果是keepAlive 组件则会走这里
-      //path 路由地址
-=======
       // 解析类似obj.a.b的值 赋值给对象的key，触发getter
->>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
       this.getter = parsePath(expOrFn);
       if (!this.getter) {
         this.getter = noop;
@@ -3371,15 +3358,9 @@
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
-<<<<<<< HEAD
-      // 递归遍历使能够全部被追踪
-      if (this.deep) {
-        console.log('[/core/observer/watcher.js get]',value);
-=======
       // 递归遍历找value
       if (this.deep) {
         console.log('[/core/observer/watcher.js get deep]');
->>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
         traverse(value);
       }
       popTarget();

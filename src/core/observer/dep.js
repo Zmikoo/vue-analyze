@@ -13,12 +13,12 @@ let uid = 0
  */
 export default class Dep {
   static target: ?Watcher;
-  id: number;
-  subs: Array<Watcher>;
+  id: number;// 数据对应的唯一id
+  subs: Array<Watcher>;// 数据对应的dom节点列表（watcher列表）
 
   constructor () {
-    this.id = uid++ // 数据对应的唯一id
-    this.subs = [] // 数据对应的dom节点列表（watcher列表）
+    this.id = uid++ 
+    this.subs = [] 
   }
 
   addSub (sub: Watcher) {

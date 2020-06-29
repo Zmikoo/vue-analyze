@@ -25,7 +25,7 @@ function _traverse (val: any, seen: SimpleSet) {
   if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
     return
   }
-  if (val.__ob__) {
+  if (val.__ob__) {// __0b__是Oberver对象含有的属性
     const depId = val.__ob__.dep.id
     if (seen.has(depId)) {
       return
