@@ -22,7 +22,8 @@ let uid = 0
  * A watcher parses an expression, collects dependencies,
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
- * 
+ * 1. 在自身实例化时往属性订阅器(dep)里面添加自己 ，
+ * 2. 有一个 update()方法 当属于发生变动触发setter时， dep会调用dep.notice()通知watcher，watcher就会调用自身的update()方法，并触发 Compile 中实例化watcher时传入的用于更新DOM数据的回调函数
  * 实例化位置：
  * core/instance/lifecycle  mountComponent
  * core/instance/state   initComputed -> if (!isSSR)
@@ -114,7 +115,6 @@ export default class Watcher {
   get () {
     console.log('[/core/observer/watcher.js get]',this)
     pushTarget(this)
-    console.log('[/core/observer/watcher.js get]')
     let value
     const vm = this.vm
     try {

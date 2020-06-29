@@ -34,6 +34,7 @@ export function toggleObserving (value: boolean) {
  * object. Once attached, the observer converts the target
  * object's property keys into getter/setters that
  * collect dependencies and dispatch updates.
+ * 用于监听每一个数据变化
  * Observer会附加到每一个被侦测的data上，给data添加setter,getter来收集属性的依赖
  */
 export class Observer {
@@ -45,17 +46,18 @@ export class Observer {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
-    def(value, '__ob__', this)// 将data的Observer实例绑定在data上,方便在其他位置访问Observer实例或Observer.dep
+    def(value, '__ob__', this)// 将data的Observer实例绑定在data的__ob__属性上,方便在其他位置访问Observer实例或Observer.dep或判断data有没有被监听
     if (Array.isArray(value)) {
-       // 给每一个数组类型的data添加可触发视图更新的'push','pop','shift','unshift','splice','sort','reverse'方法
+       // 给每一个数组添加可触发视图更新的'push','pop','shift','unshift','splice','sort','reverse'方法
       if (hasProto) {//  hasProto = '__proto__' in {}
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
       }
-      this.observeArray(value)// 给value（数组）的每一项都添加 new Observer
+      // 给数组的每一项都添加 new Observer
+      this.observeArray(value)
     } else {
-      // 深度遍历对象添加new Observer
+      // 深度遍历对象的每一项添加new Observer
       this.walk(value)
     }
   }
@@ -158,7 +160,7 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
-  const dep = new Dep()
+  const dep = new Dep()// 这个dep的作用是在get中存储Watcher，方便在set中通知Watcher;
 
   const property = Object.getOwnPropertyDescriptor(obj, key)// 获取obj上key对应的属性描述符对象。
   if (property && property.configurable === false) {// 如果key值不可配置，则return
@@ -172,18 +174,18 @@ export function defineReactive (
     val = obj[key]
   }
 
-  let childOb = !shallow && observe(val)// 返回数组的Observer对象,数组的target/Watcher存储在Observer实例上的Dep；
+  let childOb = !shallow && observe(val)// 将每个val(数组/部分对象)都转化为Observer对象（如果value已经存在一个Observer实例，则直接返回它自己）
   Object.defineProperty(obj, key, {
     enumerable: true,// 表示遍历obj时，key可以被遍历
     configurable: true,// 表示key可以配置
     get: function reactiveGetter () {// 每次有dom获取key时，就会执行get,收集target(Node/Watcher)。谨记不在定义时执行，只在get事件发生时执行
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {// 在解析html模板的过程中如果发现一个dom中有key（vue实例的data），就会把dom赋值给target
-        dep.depend()// 将依赖（target:Node/Watcher）收集到dep中进行管理，目的：当key值发生变化时去通知这个target/Watcher
-
-        if (childOb) {// 如果dom中的key形式类似于obj.a.b或者arr[0]这种形式，就给obj.a和obj.a.b的Dep中也添加target侦测;
-          childOb.dep.depend()
-          console.log(val)
+        dep.depend()// 将依赖收集到dep中,在set时通知变化
+        // console.log('[/core/observer/index.js defineReactive]',val,childOb)
+        if (childOb) {// 如果val是一个有子属性的对象或者是一个数组，会执行代码块,如果val是简单类型，不会执行代码块
+          childOb.dep.depend()// 将target存储在Observer实例的dep中方便其他位置访问操作
+          console.log('[/core/observer/index.js defineReactive-get]',childOb)
           if (Array.isArray(value)) {
             dependArray(value) //数组每个item全部denpend target
           }
@@ -210,6 +212,8 @@ export function defineReactive (
         val = newVal
       }
       childOb = !shallow && observe(newVal)
+
+      console.log('[/core/observer/index.js defineReactive-set]',dep)
       dep.notify()// 通知Watcher更新target列表
     }
   })
