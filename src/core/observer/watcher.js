@@ -22,11 +22,18 @@ let uid = 0
  * A watcher parses an expression, collects dependencies,
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
+ * 
+ * 实例化位置：
+ * core/instance/lifecycle  mountComponent
+ * core/instance/state   initComputed -> if (!isSSR)
+ * 
+ * Dep存储和操作Watcher
+ * core/observer/scheduler 处理Watcher队列
  */
 export default class Watcher {
   vm: Component;//vm vode
   expression: string;
-  cb: Function;
+  cb: Function;// data更新后用于更新DOM的回调函数
   id: number;
   deep: boolean;
   user: boolean;
@@ -38,16 +45,16 @@ export default class Watcher {
   newDeps: Array<Dep>;// 新的观察者队列
   depIds: SimpleSet;
   newDepIds: SimpleSet;
-  before: ?Function;
+  before: ?Function;//beforeUpdate钩子函数
   getter: Function;
   value: any;
 
   constructor (
     vm: Component,
-    expOrFn: string | Function,
-    cb: Function,
+    expOrFn: string | Function,// data或js表达式或者函数 
+    cb: Function,// data更新后用于更新DOM的回调函数
     options?: ?Object,
-    isRenderWatcher?: boolean
+    isRenderWatcher?: boolean //是否渲染过得观察者
   ) {
     this.vm = vm
     if (isRenderWatcher) {
@@ -61,7 +68,7 @@ export default class Watcher {
       this.user = !!options.user
       this.lazy = !!options.lazy//懒惰 ssr 渲染
       this.sync = !!options.sync //如果是同步
-      this.before = options.before
+      this.before = options.before // beforeUpdate钩子函数
     } else {
       this.deep = this.user = this.lazy = this.sync = false
     }
@@ -78,13 +85,13 @@ export default class Watcher {
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
-      this.getter = expOrFn
+      this.getter = expOrFn// 给数据赋新值，触发getter
     } else {
-      //如果是keepAlive 组件则会走这里
-      //path 路由地址
+      // 解析类似obj.a.b的值 赋值给对象的key，触发getter
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
+        // 报错解析值失败
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -102,14 +109,16 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 计算getter,重新收集依赖
    */
   get () {
     console.log('[/core/observer/watcher.js get]',this)
     pushTarget(this)
+    console.log('[/core/observer/watcher.js get]')
     let value
     const vm = this.vm
     try {
-      value = this.getter.call(vm, vm)
+      value = this.getter.call(vm, vm)// 在vm上找data
     } catch (e) {
       if (this.user) {
         handleError(e, vm, `getter for watcher "${this.expression}"`)
@@ -119,9 +128,9 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
-      // 递归遍历使能够全部被追踪
+      // 递归遍历找value
       if (this.deep) {
-        console.log('[/core/observer/watcher.js get]',value)
+        console.log('[/core/observer/watcher.js get deep]')
         traverse(value)
       }
       popTarget()

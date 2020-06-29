@@ -2134,18 +2134,24 @@
    * Recursively traverse an object to evoke all converted
    * getters, so that every nested property inside the object
    * is collected as a "deep" dependency.
+<<<<<<< HEAD
    * 递归地遍历对象以唤起所有已转换的对象
    * 吸气剂，使对象内的每个嵌套属性
    * 被收集为“深度”依赖项。
+=======
+   * 递归地遍历对象 深度追踪
+>>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
    */
   function traverse (val) {
     _traverse(val, seenObjects);
-    seenObjects.clear();
+    seenObjects.clear();// 清空set中的所有元素
   }
 
   function _traverse (val, seen) {
     var i, keys;
     var isA = Array.isArray(val);
+    // Object.isFrozen对象是否被冻结
+    // 一个对象是冻结的是指它不可扩展，所有属性都是不可配置的，且所有数据属性（即没有getter或setter组件的访问器的属性）都是不可写的。
     if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
       return
     }
@@ -2156,7 +2162,7 @@
       }
       seen.add(depId);
     }
-    if (isA) {
+    if (isA) {// 如果是数组
       i = val.length;
       while (i--) { _traverse(val[i], seen); }
     } else {
@@ -3271,13 +3277,20 @@
    * A watcher parses an expression, collects dependencies,
    * and fires callback when the expression value changes.
    * This is used for both the $watch() api and directives.
+   * 
+   * 实例化位置：
+   * core/instance/lifecycle  mountComponent
+   * core/instance/state   initComputed -> if (!isSSR)
+   * 
+   * Dep存储和操作Watcher
+   * core/observer/scheduler 处理Watcher队列
    */
   var Watcher = function Watcher (
     vm,
-    expOrFn,
-    cb,
+    expOrFn,// data或js表达式或者函数 
+    cb,// data更新后用于更新DOM的回调函数
     options,
-    isRenderWatcher
+    isRenderWatcher //是否渲染过得观察者
   ) {
     this.vm = vm;
     if (isRenderWatcher) {
@@ -3291,7 +3304,11 @@
       this.user = !!options.user;
       this.lazy = !!options.lazy;//懒惰 ssr 渲染
       this.sync = !!options.sync; //如果是同步
+<<<<<<< HEAD
       this.before = options.before;
+=======
+      this.before = options.before; // beforeUpdate钩子函数
+>>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
     } else {
       this.deep = this.user = this.lazy = this.sync = false;
     }
@@ -3306,13 +3323,18 @@
     this.expression = expOrFn.toString();
     // parse expression for getter
     if (typeof expOrFn === 'function') {
-      this.getter = expOrFn;
+      this.getter = expOrFn;// 给数据赋新值，触发getter
     } else {
+<<<<<<< HEAD
       //如果是keepAlive 组件则会走这里
       //path 路由地址
+=======
+      // 解析类似obj.a.b的值 赋值给对象的key，触发getter
+>>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
       this.getter = parsePath(expOrFn);
       if (!this.getter) {
         this.getter = noop;
+        // 报错解析值失败
         warn(
           "Failed watching path: \"" + expOrFn + "\" " +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -3330,14 +3352,16 @@
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 计算getter,重新收集依赖
    */
   Watcher.prototype.get = function get () {
     console.log('[/core/observer/watcher.js get]',this);
     pushTarget(this);
+    console.log('[/core/observer/watcher.js get]');
     var value;
     var vm = this.vm;
     try {
-      value = this.getter.call(vm, vm);
+      value = this.getter.call(vm, vm);// 在vm上找data
     } catch (e) {
       if (this.user) {
         handleError(e, vm, ("getter for watcher \"" + (this.expression) + "\""));
@@ -3347,9 +3371,15 @@
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+<<<<<<< HEAD
       // 递归遍历使能够全部被追踪
       if (this.deep) {
         console.log('[/core/observer/watcher.js get]',value);
+=======
+      // 递归遍历找value
+      if (this.deep) {
+        console.log('[/core/observer/watcher.js get deep]');
+>>>>>>> 1e13eeab7a7adb0731f98c156e164a3082bad198
         traverse(value);
       }
       popTarget();

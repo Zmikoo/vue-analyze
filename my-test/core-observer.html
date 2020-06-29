@@ -7,10 +7,11 @@
     <body>
         <div id='app'>
             <div>
-                {{msg + name + age}}
+                {{msg + obj.name.first + age}}
                 <span>{{msg}}</span>
             </div>
             <input type="text" v-model='msg'>
+            <button @click='changeObj'>点击</button>
         </div>
     </body>
     <script>
@@ -20,6 +21,17 @@
                 msg:'Hello World',
                 name:'Jone',
                 age: 15,
+                obj:{
+                    name: {
+                        first:'Zhang',
+                        last:'yx'
+                    }
+                }
+            },
+            methods:{
+                changeObj(){
+                    this.obj.name.first = 'Yang'
+                }
             }
         })
         // console.log(window.test-passive())
