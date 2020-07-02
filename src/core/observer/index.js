@@ -146,6 +146,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
  * Define a reactive property on an Object.
  * 
  * 定义响应式数据，以进行变化追踪
+ * 给Vue添加$attrs,$listeners
  * 
  * 调用位置：
  * core/instance/inject  Object.keys(result).forEach(key => {defineReactive(vm, key, result[key])})  注： 初始化注入,init.js中被调用

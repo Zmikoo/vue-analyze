@@ -7,7 +7,7 @@
     <body>
         <div id='app'>
             <div>
-                {{msg + obj.name.first + age + arr[1] + arr2[1]}}
+                {{msg}}
                 <span>{{msg}}</span>
             </div>
             <span>{{msg}}}</span>
@@ -18,6 +18,7 @@
     <script>
         var vm = new Vue({
             el:'#app',
+            customOption: 'foo',// 自定义property
             data:{
                 msg:'Hello World',
                 name:'Jone',
@@ -31,10 +32,41 @@
                 arr:[1,2,3,4],
                 arr2:[2,3]
             },
+            boforeCreate(){
+                console.log('boforeCreate')
+            },
+            created(){
+                console.log('created')
+                console.log(this.$options.customOption)// 自定义property
+            },
+            beforeMount(){
+                console.log('beforeMount')
+            },
+            mounted(){
+                console.log('mounted')
+            },
+            beforeUpdate(){
+                console.log('beforeUpdate')
+            },
+            update(){
+                console.log('update')
+            },
+            beforeDestory(){
+                console.log('beforeDestory')
+            },
+            destroyed(){
+                console.log('destroyed')
+            },
             methods:{
                 changeObj(){
                     this.obj.name.first = 'Yang'
                 }
+            },
+            computed:{
+
+            },
+            watcher:{
+
             }
         })
         // console.log(window.test-passive())

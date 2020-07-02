@@ -22,14 +22,21 @@ let uid = 0
  * A watcher parses an expression, collects dependencies,
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
- * 1. 在自身实例化时往属性订阅器(dep)里面添加自己 ，
- * 2. 有一个 update()方法 当属于发生变动触发setter时， dep会调用dep.notice()通知watcher，watcher就会调用自身的update()方法，并触发 Compile 中实例化watcher时传入的用于更新DOM数据的回调函数
+ * 1. 每个绑定了Vue实例中的data(使用了v-text,{{}},v-model,v-text...)的DOM都会new一个Watcher
+ * 2. 在自身实例化时往属性订阅器(dep)里面添加自己 ，
+ * 3. 有一个 update()方法 当属于发生变动触发setter时， dep会调用dep.notify()通知watcher，notify具体实现如下
+ *      for (let i = 0, l = subs.length; i < l; i++) {
+          subs[i].update()// Watcher.update更新DOM数据
+        }
+ * 4. watcher就会调用自身的update()方法，通过触发 （Compile 中实例化watcher时传入的用于更新DOM数据的）回调函数更新DOM
  * 实例化位置：
  * core/instance/lifecycle  mountComponent
  * core/instance/state   initComputed -> if (!isSSR)
  * 
  * Dep存储和操作Watcher
  * core/observer/scheduler 处理Watcher队列
+ * 
+ * 
  */
 export default class Watcher {
   vm: Component;//vm vode
@@ -74,12 +81,12 @@ export default class Watcher {
       this.deep = this.user = this.lazy = this.sync = false
     }
     this.cb = cb // 一旦数据发生变化，需要调用cb更新dom
-    this.id = ++uid // uid for batching
+    this.id = ++uid // uid for batching 和Dep一一对应的uid
     this.active = true
     this.dirty = this.lazy // for lazy watchers 对于懒惰的观察者
     this.deps = []// 观察者队列
     this.newDeps = []// 新的观察者队列
-    this.depIds = new Set()// 内容不可重复的数组对象
+    this.depIds = new Set()// 一个subs数组只有一个id，
     this.newDepIds = new Set()
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
@@ -104,8 +111,6 @@ export default class Watcher {
     this.value = this.lazy
       ? undefined
       : this.get()
-
-    console.log(111111,this.cb.toString())
   }
 
   /**
@@ -156,6 +161,7 @@ export default class Watcher {
 
   /**
    * Clean up for dependency collection.
+   * 如果数据（id）被移除，
    */
   cleanupDeps () {
     let i = this.deps.length

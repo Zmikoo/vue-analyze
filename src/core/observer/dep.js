@@ -37,6 +37,7 @@ export default class Dep {
     }
   }
 
+  // 通知DOM更新
   notify () {
     // stabilize the subscriber list first
     const subs = this.subs.slice()
@@ -47,7 +48,7 @@ export default class Dep {
       subs.sort((a, b) => a.id - b.id)
     }
     for (let i = 0, l = subs.length; i < l; i++) {
-      subs[i].update()
+      subs[i].update()// Watcher.update更新DOM数据
     }
   }
 }
@@ -66,6 +67,6 @@ export function pushTarget (target: ?Watcher) {
 }
 
 export function popTarget () {
-  targetStack.pop()
+  targetStack.pop()// 后进先出
   Dep.target = targetStack[targetStack.length - 1]
 }
